@@ -1,0 +1,45 @@
+<mujoco model="adam_u pick place scene">
+	<size nconmax="2048" njmax="8192" nstack="65536"/>
+	<include file="../../pnd_mujoco/pnd_robots/adam_u/adam_u.xml" />
+    <compiler meshdir="../../pnd_mujoco/pnd_robots/adam_u/assets/"/>
+    
+	<asset>
+		<mesh name="nut_visual" file="../../../../RAI Robot Learning/nut (bigger rod).obj" scale="0.001 0.001 0.001"/>
+		<mesh name="nut_collision" file="../../../../RAI Robot Learning/nut.stl" scale="0.001 0.001 0.001"/>
+	</asset>
+
+	<statistic center="0 0 1" extent="1.8" />
+	<visual>
+		<headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
+		<rgba haze="0.15 0.25 0.35 1" />
+		<global azimuth="160" elevation="-20" />
+	</visual>
+	<asset>
+		<texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072" />
+		<texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
+		<material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2" />
+	</asset>
+
+	<worldbody>
+		<light pos="0 0 3.5" dir="0 0 -1" directional="true" />
+		<geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
+		<body name="table" pos="0.5 0 1">
+        	<geom name="table_top" type="box" size="0.35 0.45 0.025" rgba="0.45 0.32 0.22 1" contype="1" conaffinity="1"/>
+    	</body>
+		<body name="nut" pos="0.5 0 1.0351" quat="0.9659 0.2588 0 0">  <!-- table centre, resting on a flat -->
+			<freejoint name="nut_freejoint"/>
+			<geom name="nut_visiual_geom" type="mesh" mesh="nut_visual" contype="0" conaffinity="0" mass="0"/>
+			<!-- <geom name="nut_collision_geom" type="mesh" mesh="nut_collision" mass="0.1"/> -->
+			<geom name="nut_collision_geom" type="mesh" mesh="nut_collision" mass="0.025"
+				friction="2.5 0.05 0.001" condim="6" solref="0.01 1" solimp="0.95 0.99 0.001"/>
+		</body>
+
+		<!-- <camera name="head_placeholder_camera" mode="targetbody" target="table" pos="0.10 0.02 1.52" fovy="60"/> -->
+		
+		<body name="target_block" mocap="true" pos="0.5 0 1.021">  <!-- table centre, on the surface -->
+    		<geom name="target_visual" type="box" size="0.035 0.035 0.005" rgba="0.1 0.8 0.2 1" contype="0" conaffinity="0"/>
+		</body>
+	</worldbody>
+	<!-- <option timestep="0.001"/> -->
+	<option timestep="0.001" cone="elliptic" impratio="10"/>
+</mujoco>
