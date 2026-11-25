@@ -382,10 +382,10 @@ def record_episode(ep, nut_pos, target_pos):
     # Recorded demo
     samples = []
     pos_to_send = HOME_POS.copy()
-    pos_to_send, s = joint_move(pos_to_send, goal_pos, 0.5, grasp=False, arm=arm)
+    pos_to_send, s = hold(pos_to_send, 0.5, grasp=False, arm=arm)
     samples += s
     for goal_pos in route["raise_arm"]:
-        pos_to_send, s = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm)
+        pos_to_send, s = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm, record=True)
         samples += s
     ik.sync(pos_to_send)
     pos_to_send, s = hold(pos_to_send, 2.0, grasp=False, arm=arm)
@@ -406,11 +406,11 @@ def record_episode(ep, nut_pos, target_pos):
     samples += s   # open hand
     pos_to_send, s = ik_move(target + LIFT_HEIGHT * up, grasp=False, arm=arm, tol=TRAVEL_TOL)
     samples += s   # retreat
-
-    # Back to HOME (not recorded); a direct go_home() from over the table would hit the table
-    pos_to_send, _ = joint_move(pos_to_send, route["above_table"], 3.0, grasp=False, arm=arm)
+    pos_to_send, s = joint_move(pos_to_send, route["above_table"], 3.0, grasp=False, arm=arm, record=True)
+    samples += s
     for goal_pos in route["lower_arm"]:
-        pos_to_send, _ = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm)
+        pos_to_send, s = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm, record=True)
+        samples += s
 
     return samples, nut, target
 
