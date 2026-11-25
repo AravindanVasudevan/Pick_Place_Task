@@ -4,8 +4,8 @@
     <compiler meshdir="../../pnd_mujoco/pnd_robots/adam_u/assets/"/>
     
 	<asset>
-		<mesh name="nut_visual" file="../../../../RAI Robot Learning/nut (bigger rod).obj" scale="0.001 0.001 0.001"/>
-		<mesh name="nut_collision" file="../../../../RAI Robot Learning/nut.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="nut_visual" file="../../../../task_imitation_learning/assets/object_nut/nut (bigger rod).obj" scale="0.001 0.001 0.001"/>
+		<mesh name="nut_collision" file="../../../../task_imitation_learning/assets/object_nut/nut.stl" scale="0.001 0.001 0.001"/>
 	</asset>
 
 	<statistic center="0 0 1" extent="1.8" />
