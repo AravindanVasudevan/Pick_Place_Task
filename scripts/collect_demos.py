@@ -20,7 +20,7 @@ from msg.camera_msg import CameraImage
 from msg.reset_msg import SimResetSignal
 
 from utils.ik_solver import IK_Solver
-from utils.timing import CONTROL_DT, RECORD_EVERY, POLICY_DT, wait_for_next_tick
+from utils.timing import CONTROL_DT, RECORD_EVERY, wait_for_next_tick
 
 NUM_MOTOR = 19
 
@@ -114,16 +114,16 @@ LIFT_HEIGHT = 0.10
 TRAVEL_TOL = 0.003
 
 
-ABDUCT_POS = HOME_POS.copy()
-ABDUCT_POS[13] = -0.8
-BEND_POS = ABDUCT_POS.copy()
-BEND_POS[15] = -1.6
-SHAPE_POS = HOME_POS.copy()
-SHAPE_POS[[12, 13, 15, 17]] = [-0.3, -0.8, -1.2, 0.9]
-READY_POS = HOME_POS.copy()
-READY_POS[[12, 15, 17]] = [-0.3, -1.2, 0.9]
-ROUTE_TO_READY = [ABDUCT_POS, BEND_POS, SHAPE_POS, READY_POS]
-ROUTE_TO_HOME = [SHAPE_POS, BEND_POS, ABDUCT_POS, HOME_POS]
+ARM_OUT_POS = HOME_POS.copy()
+ARM_OUT_POS[13] = -0.8
+ELBOW_BENT_POS = ARM_OUT_POS.copy()
+ELBOW_BENT_POS[15] = -1.6
+ARM_FORWARD_POS = HOME_POS.copy()
+ARM_FORWARD_POS[[12, 13, 15, 17]] = [-0.3, -0.8, -1.2, 0.9]
+ABOVE_TABLE_POS = HOME_POS.copy()
+ABOVE_TABLE_POS[[12, 15, 17]] = [-0.3, -1.2, 0.9]
+RAISE_ARM_ROUTE = [ARM_OUT_POS, ELBOW_BENT_POS, ARM_FORWARD_POS, ABOVE_TABLE_POS]
+LOWER_ARM_ROUTE = [ARM_FORWARD_POS, ELBOW_BENT_POS, ARM_OUT_POS, HOME_POS]
 
 MIRROR_SIGN = np.array([1, -1, -1, 1, -1, 1, -1])
 
@@ -133,10 +133,10 @@ def mirror_to_left(pos):
     left[5:12] = pos[12:19] * MIRROR_SIGN
     return left
 
-ROUTES = {"R": dict(to_ready=ROUTE_TO_READY, to_home=ROUTE_TO_HOME, ready=READY_POS),
-          "L": dict(to_ready=[mirror_to_left(p) for p in ROUTE_TO_READY],
-                    to_home=[mirror_to_left(p) for p in ROUTE_TO_HOME],
-                    ready=mirror_to_left(READY_POS))}
+ROUTES = {"R": dict(raise_arm=RAISE_ARM_ROUTE, lower_arm=LOWER_ARM_ROUTE, above_table=ABOVE_TABLE_POS),
+          "L": dict(raise_arm=[mirror_to_left(p) for p in RAISE_ARM_ROUTE],
+                    lower_arm=[mirror_to_left(p) for p in LOWER_ARM_ROUTE],
+                    above_table=mirror_to_left(ABOVE_TABLE_POS))}
 
 IK_SPEED = 0.04
 
@@ -379,13 +379,15 @@ def record_episode(ep, nut_pos, target_pos):
     nut = np.array([nut_pos[0] + NUT_CENTRE_OFFSET_X, nut_pos[1], NUT_Z])
     target = np.array([target_pos[0], target_pos[1], NUT_Z])
 
-    pos_to_send = HOME_POS.copy()
-    for goal_pos in route["to_ready"]:
-        pos_to_send, _ = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm)
-    ik.sync(pos_to_send)
-
     # Recorded demo
     samples = []
+    pos_to_send = HOME_POS.copy()
+    pos_to_send, s = joint_move(pos_to_send, goal_pos, 0.5, grasp=False, arm=arm)
+    samples += s
+    for goal_pos in route["raise_arm"]:
+        pos_to_send, s = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm)
+        samples += s
+    ik.sync(pos_to_send)
     pos_to_send, s = hold(pos_to_send, 2.0, grasp=False, arm=arm)
     samples += s   # 2 s of still frames before moving
     pos_to_send, s = ik_move(nut + APPROACH_HEIGHT * up, grasp=False, arm=arm, tol=TRAVEL_TOL)
@@ -406,8 +408,8 @@ def record_episode(ep, nut_pos, target_pos):
     samples += s   # retreat
 
     # Back to HOME (not recorded); a direct go_home() from over the table would hit the table
-    pos_to_send, _ = joint_move(pos_to_send, route["ready"], 3.0, grasp=False, arm=arm)
-    for goal_pos in route["to_home"]:
+    pos_to_send, _ = joint_move(pos_to_send, route["above_table"], 3.0, grasp=False, arm=arm)
+    for goal_pos in route["lower_arm"]:
         pos_to_send, _ = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm)
 
     return samples, nut, target
