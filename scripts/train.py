@@ -1,13 +1,5 @@
-import argparse
-import pickle
 import sys
 from pathlib import Path
-
-import cv2
-import numpy as np
-import torch
-from torch.utils.data import Dataset, DataLoader
-
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -15,6 +7,23 @@ from model.model import IL_Model, IMAGE_KEY, STATE_KEY, ACTION_KEY
 
 DATA_FILE = ROOT / "task_imitation_learning" / "data" / "demonstrations.pkl"
 CKPT_DIR = ROOT / "task_imitation_learning" / "checkpoints"
+
+import argparse
+parser = argparse.ArgumentParser(description="Train ACT (pretrained ResNet18) on the pick and place demos")
+parser.add_argument("--steps", type=int, default=20000, help="number of training steps")
+parser.add_argument("--batch", type=int, default=8, help="batch size")
+parser.add_argument("--out", type=str, default=str(CKPT_DIR), help="checkpoint folder")
+parser.add_argument("--continue_training", action="store_true", help="continue training from last saved checkpoint")
+args = parser.parse_args()
+
+
+
+import pickle
+import cv2
+import numpy as np
+import torch
+from torch.utils.data import Dataset, DataLoader
+
 
 NUM_MOTOR = 19
 OBS_DIM = NUM_MOTOR + 1
@@ -93,11 +102,6 @@ def val_loss(model, loader):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train ACT (pretrained ResNet18) on the pick and place demos")
-    parser.add_argument("--steps", type=int, default=40000, help="number of training steps")
-    parser.add_argument("--batch", type=int, default=8, help="batch size")
-    parser.add_argument("--out", type=str, default=str(CKPT_DIR), help="checkpoint folder")
-    args = parser.parse_args()
     out_dir = Path(args.out)
 
     print("loading", DATA_FILE, flush=True)
@@ -106,8 +110,11 @@ def main():
     train_eps, val_eps = episodes[:-N_VAL_EPISODES], episodes[-N_VAL_EPISODES:]
     print(f"{len(train_eps)} train / {len(val_eps)} val episodes", flush=True)
 
-    model = IL_Model(ACTION_DIM, OBS_DIM, CHUNK_SIZE, (IMG_H, IMG_W))
-    model.set_stats(compute_stats(train_eps))
+    if args.continue_training:
+        model = IL_Model.load(out_dir / "last")
+    else:
+        model = IL_Model(ACTION_DIM, OBS_DIM, CHUNK_SIZE, (IMG_H, IMG_W))
+        model.set_stats(compute_stats(train_eps))
     model.train()
 
     train_loader = DataLoader(DemoDataset(train_eps), batch_size=args.batch, shuffle=True,
@@ -119,6 +126,11 @@ def main():
                                   weight_decay=cfg.optimizer_weight_decay)
 
     step, best_val = 0, float("inf")
+    if args.continue_training:
+        state = torch.load(out_dir / "last" / "train_state.pt")
+        optimizer.load_state_dict(state["optimizer"])
+        step, best_val = state["step"], state["best_val"]
+
     while step < args.steps:
         for batch in train_loader:
             loss, info = model(batch)
@@ -134,10 +146,11 @@ def main():
             if step % 2000 == 0 or step == args.steps:
                 val = val_loss(model, val_loader)
                 print(f"step {step}  val loss {val:.4f}", flush=True)
-                model.save(out_dir / "last")
                 if val < best_val:
                     best_val = val
                     model.save(out_dir / "best")
+                model.save(out_dir / "last")
+                torch.save({"optimizer": optimizer.state_dict(), "step": step, "best_val": best_val}, out_dir / "last" / "train_state.pt")
 
             if step >= args.steps:
                 break
