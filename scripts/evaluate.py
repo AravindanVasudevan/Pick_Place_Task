@@ -22,7 +22,7 @@ from msg.reset_msg import SimResetSignal
 
 from utils.ik_solver import IK_Solver
 from utils.timing import CONTROL_DT, RECORD_EVERY, wait_for_next_tick
-from train import decode_image
+from utils.utils import decode_image
 
 EPISODE_TIME = 45.0 # Based on runs for data collections
 
@@ -207,7 +207,7 @@ def run_policy(model, duration):
             state_msg = cur_pos_sub.Read(timeout=0.05)
             if img_msg is not None and state_msg is not None:
                 cur_pos = np.array([state_msg.motor_state[i].q for i in range(NUM_MOTOR)])
-                obs = {IMAGE_KEY: decode_image(np.frombuffer(bytes(img_msg.data), dtype=np.uint8)),
+                obs = {IMAGE_KEY: decode_image(np.frombuffer(bytes(img_msg.data), dtype=np.uint8), IMG_H, IMG_W),
                        STATE_KEY: torch.tensor(np.append(cur_pos, float(grasp)), dtype=torch.float32)}
                 action = model.act(obs)[0].numpy()
                 start_cmd, goal_cmd = cur_cmd.copy(), action[:NUM_MOTOR]

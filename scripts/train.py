@@ -24,6 +24,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+from utils.utils import decode_image
 
 NUM_MOTOR = 19
 OBS_DIM = NUM_MOTOR + 1
@@ -34,12 +35,6 @@ N_VAL_EPISODES = 5
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
-
-
-def decode_image(jpeg_bytes):
-    bgr = cv2.imdecode(np.asarray(jpeg_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
-    rgb = cv2.cvtColor(cv2.resize(bgr, (IMG_W, IMG_H)), cv2.COLOR_BGR2RGB)
-    return torch.from_numpy(rgb).permute(2, 0, 1).float() / 255.0
 
 
 def episode_arrays(ep):
@@ -73,7 +68,7 @@ class DemoDataset(Dataset):
             chunk = np.concatenate([chunk, np.repeat(chunk[-1:], CHUNK_SIZE - len(chunk), axis=0)])
 
         return {
-            IMAGE_KEY: decode_image(self.images[e][t]),
+            IMAGE_KEY: decode_image(self.images[e][t], IMG_H, IMG_W),
             STATE_KEY: torch.from_numpy(states[t]),
             ACTION_KEY: torch.from_numpy(chunk),
             "action_is_pad": torch.from_numpy(is_pad),
