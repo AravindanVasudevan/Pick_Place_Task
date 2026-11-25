@@ -388,8 +388,8 @@ def record_episode(ep, nut_pos, target_pos):
         pos_to_send, s = joint_move(pos_to_send, goal_pos, 2.0, grasp=False, arm=arm, record=True)
         samples += s
     ik.sync(pos_to_send)
-    pos_to_send, s = hold(pos_to_send, 2.0, grasp=False, arm=arm)
-    samples += s   # 2 s of still frames before moving
+    pos_to_send, s = hold(pos_to_send, 0.5, grasp=False, arm=arm)
+    samples += s   # 0.5 s of still frames before moving
     pos_to_send, s = ik_move(nut + APPROACH_HEIGHT * up, grasp=False, arm=arm, tol=TRAVEL_TOL)
     samples += s   # above nut
     pos_to_send, s = ik_move(nut + GRASP_HEIGHT * up, grasp=False, arm=arm)
