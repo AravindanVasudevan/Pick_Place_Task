@@ -211,7 +211,11 @@ def run_policy(model, duration):
                        STATE_KEY: torch.tensor(np.append(cur_pos, float(grasp)), dtype=torch.float32)}
                 action = model.act(obs)[0].numpy()
                 start_cmd, goal_cmd = cur_cmd.copy(), action[:NUM_MOTOR]
-                grasp = bool(action[NUM_MOTOR] > 0.5)
+                # grasp = bool(action[NUM_MOTOR] > 0.5)
+                if action[NUM_MOTOR] > 0.8:
+                    grasp = True
+                elif action[NUM_MOTOR] < 0.5:
+                    grasp = False
 
         phase = min(1.0, (tick % RECORD_EVERY + 1) / RECORD_EVERY)
         cur_cmd = start_cmd + phase * (goal_cmd - start_cmd)
