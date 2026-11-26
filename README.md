@@ -68,6 +68,15 @@ python task_imitation_learning/scripts/collect_demos.py --episodes 100
 
 Only successful episodes are saved, to `data/demonstrations.pkl`. Re-running the command overwrites this file. When it finishes, stop `scene.py` with Ctrl+C.
 
+Example demonstrations (left arm and right arm):
+
+<table>
+  <tr>
+    <td align="center"><img src="media/demos/viewer_left_arm.gif" width="380"><br>Left arm</td>
+    <td align="center"><img src="media/demos/viewer_right_arm.gif" width="380"><br>Right arm</td>
+  </tr>
+</table>
+
 ### 4.2 Train
 ```bash
 python task_imitation_learning/scripts/train.py --steps 20000
@@ -81,6 +90,15 @@ To continue training from `checkpoints/last`, pass the **total** number of steps
 python task_imitation_learning/scripts/train.py --steps 40000 --continue_training
 ```
 
+Sample training and validation loss after traiing 40K steps:
+
+<table>
+  <tr>
+    <td align="center"><img src="media/graphs/train_loss.png" width="380"><br>Train loss</td>
+    <td align="center"><img src="media/graphs/val_loss.png" width="380"><br>Val loss</td>
+  </tr>
+</table>
+
 ### 4.3 Evaluate
 
 Terminal 1:
@@ -93,3 +111,15 @@ Terminal 2:
 python task_imitation_learning/scripts/evaluate.py --episodes 10 --checkpoint_path task_imitation_learning/checkpoints/best
 ```
 
+Evaluation of policy after 40K iterations
+<table>
+  <tr>
+    <td align="center"><img src="media/evaluation/eval_ep0_success.gif" width="420"></td>
+    <td align="center">
+      <img src="media/evaluation/eval_ep1_fail.gif" width="200">
+      <img src="media/evaluation/eval_ep2_fail.gif" width="200"><br>
+      <img src="media/evaluation/eval_ep3_fail.gif" width="200">
+      <img src="media/evaluation/eval_ep4_fail.gif" width="200">
+    </td>
+  </tr>
+</table>
